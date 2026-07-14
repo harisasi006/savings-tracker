@@ -1,6 +1,6 @@
 # 📊 MemoFinance — Memory-Friendly Transaction Tracker
 
-**MemoFinance** is a lightweight, high-contrast, and memory-friendly personal savings and transaction tracker. It is designed to help users record money sent to other individuals and monitor remaining balances in real-time, requiring very few navigation steps.
+**MemoFinance** is a lightweight, high-contrast, and memory-friendly personal savings and transaction tracker. It is designed to help users record money sent to other individuals (debits) or money received (credits), and monitor remaining balances in real-time with minimum complexity.
 
 👉 **[Live Application Link](https://harisasi006.github.io/savings-tracker/)**
 
@@ -8,9 +8,11 @@
 
 ## 🌟 Key Features
 
-* **Instant Dashboard Statistics**: View your starting savings, total money sent, and remaining balance at a single glance.
+* **Debit & Credit Support**: Toggle between recording **🔴 Money Sent (Debit)** and **🟢 Money Received (Credit)** dynamically. Form labels adjust automatically based on selection.
+* **4-Metric Dashboard**: View your starting savings, total money received, total money sent, and current net balance at a single glance.
+* **Symbol & Color Coding**: Payments are displayed with a red `-` prefix (e.g., `-₹500`) and deposits/refunds are shown with a green `+` prefix (e.g., `+₹500`).
 * **Large Touch-Friendly Input Fields**: Clean form inputs and large category chips (`🤝 Loan/Debt`, `❤️ Gift/Help`, `🍔 Food`, `🛍️ Shopping`, `💊 Medical`, `⚙️ Other`) designed for ease of use.
-* **Quick-Filter People Directory**: Dynamically shows a list of unique individuals you have paid along with the total amount sent to them. Click a name to filter history instantly.
+* **Quick-Filter People Directory**: Shows a list of unique individuals you have transacted with. Displays their name and your **net balance** with them (e.g. `Paid ₹600` or `Recv ₹300`). Click a name to filter history instantly.
 * **Local Persistent Memory**: All records are saved locally inside your web browser (`localStorage`). Data is preserved even if you close the tab or shut down your device.
 * **Data Security & Backups**: Download your entire transaction log as a backup file (`.json`) or restore a previous backup with a single click.
 
