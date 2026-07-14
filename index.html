@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MemoFinance — Memory Friendly Payment Tracker</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="container">
+    
+    <!-- Header -->
+    <header class="app-header">
+      <div class="app-title-wrap">
+        <div class="app-logo">M</div>
+        <h1 class="app-title">MemoFinance</h1>
+      </div>
+      <button class="btn-utility" id="open-settings-btn" style="flex: 0; padding: 0.6rem 1rem; border-radius: 12px;">
+        <!-- Settings Gear SVG -->
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </header>
+
+    <!-- Dashboard Panel -->
+    <div class="dashboard-grid">
+      <div class="glass-panel card">
+        <div class="card-label">My Savings</div>
+        <div class="card-value blue" id="total-savings-val">₹0</div>
+      </div>
+      <div class="glass-panel card">
+        <div class="card-label">Total Sent</div>
+        <div class="card-value red" id="total-sent-val">₹0</div>
+      </div>
+      <div class="glass-panel card">
+        <div class="card-label">Current Balance</div>
+        <div class="card-value green" id="remaining-balance-val">₹0</div>
+      </div>
+    </div>
+
+    <!-- Quick Add Transaction Form -->
+    <div class="glass-panel">
+      <h2 class="form-title">
+        <!-- Plus Circle SVG -->
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        Record Money Paid Out
+      </h2>
+      <form id="tx-form" onsubmit="return false;">
+        <div class="form-group">
+          <label class="form-label" for="input-name">Who did you pay? (Person Name)</label>
+          <input type="text" id="input-name" class="form-input" placeholder="e.g. John Doe, Shopkeeper, Friend" required>
+        </div>
+        
+        <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div>
+            <label class="form-label" for="input-amount">Amount Sent (₹)</label>
+            <input type="number" id="input-amount" class="form-input" placeholder="e.g. 500" min="1" required>
+          </div>
+          <div>
+            <label class="form-label" for="input-date">Date Paid</label>
+            <input type="date" id="input-date" class="form-input" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Category / Purpose</label>
+          <div class="chips-container">
+            <input type="radio" name="category" id="cat-loan" class="chip-input" value="Loan/Repayment" checked>
+            <label for="cat-loan" class="chip-label">🤝 Loan/Debt</label>
+
+            <input type="radio" name="category" id="cat-help" class="chip-input" value="Gift/Help">
+            <label for="cat-help" class="chip-label">❤️ Gift/Help</label>
+
+            <input type="radio" name="category" id="cat-food" class="chip-input" value="Food/Groceries">
+            <label for="cat-food" class="chip-label">🍔 Food</label>
+
+            <input type="radio" name="category" id="cat-shopping" class="chip-input" value="Shopping">
+            <label for="cat-shopping" class="chip-label">🛍️ Shopping</label>
+
+            <input type="radio" name="category" id="cat-medical" class="chip-input" value="Medical">
+            <label for="cat-medical" class="chip-label">💊 Medical</label>
+
+            <input type="radio" name="category" id="cat-other" class="chip-input" value="Other">
+            <label for="cat-other" class="chip-label">⚙️ Other</label>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 1.5rem;">
+          <button type="submit" class="btn-submit" id="submit-btn">
+            Save Payment Record
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- People Directory Section -->
+    <div class="people-section" id="people-section" style="display: none;">
+      <h3 class="people-title">Quick History by Person (Tap name to view)</h3>
+      <div class="people-list" id="people-list-container">
+        <!-- Dynamic People Chips go here -->
+      </div>
+    </div>
+
+    <!-- Transactions Log -->
+    <div class="glass-panel">
+      <div class="log-header">
+        <h2 style="font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+          <!-- History List SVG -->
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Payment History
+        </h2>
+        <input type="text" id="search-bar" class="form-input search-input" placeholder="Search by name...">
+      </div>
+
+      <div class="tx-list" id="tx-list-container">
+        <!-- Dynamic Transaction rows go here -->
+      </div>
+    </div>
+
+    <!-- Backup & Utility Buttons -->
+    <div class="utility-row">
+      <button class="btn-utility" id="export-btn">
+        <!-- Download SVG -->
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download Backup
+      </button>
+      <button class="btn-utility" id="import-btn-trigger">
+        <!-- Upload SVG -->
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Restore Backup
+      </button>
+      <input type="file" id="import-file-input" style="display: none;" accept=".json">
+    </div>
+
+  </div> <!-- End Container -->
+
+  <!-- Settings Modal (Edit Savings) -->
+  <div class="modal" id="settings-modal">
+    <div class="glass-panel modal-content">
+      <button class="modal-close" id="close-settings-btn">&times;</button>
+      <h3>Configure Savings</h3>
+      <form id="settings-form" onsubmit="return false;">
+        <div class="form-group">
+          <label class="form-label" for="savings-budget-input">Your Total Savings Amount (₹)</label>
+          <input type="number" id="savings-budget-input" class="form-input" min="0" required>
+        </div>
+        <button type="submit" class="btn-submit" id="save-settings-btn" style="padding: 0.8rem; font-size: 0.95rem;">
+          Update Savings Balance
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- JS Controller -->
+  <script src="app.js"></script>
+</body>
+</html>
