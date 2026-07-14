@@ -2,9 +2,11 @@
 let transactions = [];
 let initialSavings = 10000;
 let activePersonFilter = null; // Store active filter for people directory
+let currentTxType = 'sent'; // 'sent' = debit, 'received' = credit
 
 // DOM Elements
 const totalSavingsEl = document.getElementById('total-savings-val');
+const totalReceivedEl = document.getElementById('total-received-val');
 const totalSentEl = document.getElementById('total-sent-val');
 const remainingBalanceEl = document.getElementById('remaining-balance-val');
 
@@ -12,6 +14,15 @@ const txForm = document.getElementById('tx-form');
 const inputName = document.getElementById('input-name');
 const inputAmount = document.getElementById('input-amount');
 const inputDate = document.getElementById('input-date');
+
+// Labels and buttons to change dynamically
+const labelName = document.getElementById('label-name');
+const labelAmount = document.getElementById('label-amount');
+const submitBtn = document.getElementById('submit-btn');
+
+// Toggle buttons
+const toggleSentBtn = document.getElementById('toggle-sent');
+const toggleReceivedBtn = document.getElementById('toggle-received');
 
 const peopleSection = document.getElementById('people-section');
 const peopleListContainer = document.getElementById('people-list-container');
@@ -37,7 +48,6 @@ function loadData() {
   if (storedSavings !== null) {
     initialSavings = parseFloat(storedSavings);
   } else {
-    // Save default initial savings if not present
     localStorage.setItem('mf_initial_savings', initialSavings.toString());
   }
 
@@ -55,11 +65,14 @@ function saveData() {
 
 // Currency Formatter Utility
 function formatCurrency(amount) {
-  return new Intl.NumberFormat('en-IN', {
+  const isNegative = amount < 0;
+  const absAmount = Math.abs(amount);
+  const formatted = new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
     maximumFractionDigits: 0
-  }).format(amount);
+  }).format(absAmount);
+  return isNegative ? `-${formatted}` : formatted;
 }
 
 // Set Default Date to Today
@@ -71,19 +84,58 @@ function setDefaultDate() {
   inputDate.value = `${year}-${month}-${day}`;
 }
 
+// --- TOGGLE LOGIC ---
+if (toggleSentBtn && toggleReceivedBtn) {
+  toggleSentBtn.addEventListener('click', () => {
+    currentTxType = 'sent';
+    toggleSentBtn.classList.add('active');
+    toggleReceivedBtn.classList.remove('active');
+    
+    // Update labels and text dynamically
+    labelName.textContent = "Who did you pay? (Person Name)";
+    labelAmount.textContent = "Amount Sent (₹)";
+    submitBtn.textContent = "Save Payment Record";
+    submitBtn.style.background = "linear-gradient(135deg, var(--color-red), #ff9100)";
+  });
+
+  toggleReceivedBtn.addEventListener('click', () => {
+    currentTxType = 'received';
+    toggleReceivedBtn.classList.add('active');
+    toggleSentBtn.classList.remove('active');
+    
+    // Update labels and text dynamically
+    labelName.textContent = "Who paid you? (Person Name)";
+    labelAmount.textContent = "Amount Received (₹)";
+    submitBtn.textContent = "Save Credit Record";
+    submitBtn.style.background = "linear-gradient(135deg, var(--color-green), #00b0ff)";
+  });
+}
+
 // --- CALCULATION & RENDERING ---
 
 function calculateAndRender() {
   // 1. Calculate Totals
-  const totalSent = transactions.reduce((sum, tx) => sum + tx.amount, 0);
-  const remainingBalance = initialSavings - totalSent;
+  let totalSent = 0;
+  let totalReceived = 0;
+
+  transactions.forEach(tx => {
+    const type = tx.type || 'sent'; // default to sent for older records
+    if (type === 'sent') {
+      totalSent += tx.amount;
+    } else {
+      totalReceived += tx.amount;
+    }
+  });
+
+  const remainingBalance = initialSavings + totalReceived - totalSent;
 
   // 2. Render Cards
   totalSavingsEl.textContent = formatCurrency(initialSavings);
+  totalReceivedEl.textContent = formatCurrency(totalReceived);
   totalSentEl.textContent = formatCurrency(totalSent);
   remainingBalanceEl.textContent = formatCurrency(remainingBalance);
 
-  // Apply visual warning class if balance is negative or zero
+  // Apply warning class if balance is negative
   if (remainingBalance < 0) {
     remainingBalanceEl.className = 'card-value red';
   } else {
@@ -97,7 +149,7 @@ function calculateAndRender() {
   renderTransactionList();
 }
 
-// Build list of unique people paid
+// Build list of unique people paid/received
 function renderPeopleDirectory() {
   peopleListContainer.innerHTML = '';
   
@@ -108,15 +160,17 @@ function renderPeopleDirectory() {
 
   peopleSection.style.display = 'block';
 
-  // Calculate totals spent per person
-  const totalsPerPerson = {};
+  // Calculate net balance spent per person (Paid - Received)
+  const netPerPerson = {};
   transactions.forEach(tx => {
-    // Normalize name to handle capitalization mismatches
     const normalName = tx.name.trim();
-    totalsPerPerson[normalName] = (totalsPerPerson[normalName] || 0) + tx.amount;
+    const type = tx.type || 'sent';
+    const modifier = type === 'sent' ? 1 : -1;
+    
+    netPerPerson[normalName] = (netPerPerson[normalName] || 0) + (tx.amount * modifier);
   });
 
-  // Create a chip for "All Transactions" to clear filters
+  // Create a chip for "All Transactions"
   const allChip = document.createElement('div');
   allChip.className = `people-chip ${activePersonFilter === null ? 'active' : ''}`;
   allChip.innerHTML = `
@@ -130,16 +184,28 @@ function renderPeopleDirectory() {
   peopleListContainer.appendChild(allChip);
 
   // Add individual people chips
-  Object.keys(totalsPerPerson).forEach(name => {
+  Object.keys(netPerPerson).forEach(name => {
     const chip = document.createElement('div');
     const isActive = activePersonFilter === name;
     chip.className = `people-chip ${isActive ? 'active' : ''}`;
+    
+    const balanceVal = netPerPerson[name];
+    let label = '';
+    
+    if (balanceVal > 0) {
+      label = `Paid ${formatCurrency(balanceVal)}`;
+    } else if (balanceVal < 0) {
+      label = `Recv ${formatCurrency(Math.abs(balanceVal))}`;
+    } else {
+      label = `Settled (₹0)`;
+    }
+
     chip.innerHTML = `
       <h4>${name}</h4>
-      <span>Paid ${formatCurrency(totalsPerPerson[name])}</span>
+      <span class="${balanceVal < 0 ? 'green' : ''}">${label}</span>
     `;
     chip.addEventListener('click', () => {
-      activePersonFilter = isActive ? null : name; // Toggle filter on click
+      activePersonFilter = isActive ? null : name;
       calculateAndRender();
     });
     peopleListContainer.appendChild(chip);
@@ -152,7 +218,7 @@ function renderTransactionList() {
 
   const searchQuery = searchBar.value.trim().toLowerCase();
   
-  // Apply search query and people filters
+  // Apply filters
   let filteredTx = transactions;
 
   if (activePersonFilter) {
@@ -166,7 +232,7 @@ function renderTransactionList() {
     );
   }
 
-  // Sort transactions by date (most recent first), then by insertion
+  // Sort transactions by date (most recent first)
   filteredTx.sort((a, b) => new Date(b.date) - new Date(a.date));
 
   if (filteredTx.length === 0) {
@@ -182,12 +248,17 @@ function renderTransactionList() {
     const item = document.createElement('div');
     item.className = 'tx-item';
     
-    // Format date beautifully
+    const type = tx.type || 'sent';
+
     const formattedDate = new Date(tx.date).toLocaleDateString('en-IN', {
       day: 'numeric',
       month: 'short',
       year: 'numeric'
     });
+
+    const isReceived = type === 'received';
+    const sign = isReceived ? '+' : '-';
+    const amountClass = isReceived ? 'tx-amount green' : 'tx-amount red';
 
     item.innerHTML = `
       <div class="tx-info">
@@ -199,7 +270,7 @@ function renderTransactionList() {
         </div>
       </div>
       <div class="tx-right">
-        <div class="tx-amount">-${formatCurrency(tx.amount)}</div>
+        <div class="${amountClass}">${sign}${formatCurrency(tx.amount)}</div>
         <button class="btn-delete" title="Delete record" data-id="${tx.id}">
           <!-- Trash Can SVG -->
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
@@ -218,7 +289,6 @@ function renderTransactionList() {
   });
 }
 
-// Simple HTML escaping to prevent XSS injection
 function escapeHTML(str) {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
@@ -233,30 +303,29 @@ txForm.addEventListener('submit', (e) => {
   const amountValue = parseFloat(inputAmount.value);
   const dateValue = inputDate.value;
   
-  // Find selected category radio
   const checkedRadio = document.querySelector('input[name="category"]:checked');
   const categoryValue = checkedRadio ? checkedRadio.value : 'Other';
 
   if (!nameValue || isNaN(amountValue) || !dateValue) return;
 
   const newTx = {
-    id: Date.now().toString(), // unique timestamp ID
+    id: Date.now().toString(),
     name: nameValue,
     amount: amountValue,
     date: dateValue,
-    category: categoryValue
+    category: categoryValue,
+    type: currentTxType // 'sent' or 'received'
   };
 
   transactions.push(newTx);
   saveData();
   calculateAndRender();
 
-  // Reset name and amount fields
+  // Reset fields
   inputName.value = '';
   inputAmount.value = '';
   setDefaultDate();
   
-  // Focus back on name field for easy sequential typing
   inputName.focus();
 });
 
@@ -265,8 +334,10 @@ function deleteTransaction(id) {
   const targetTx = transactions.find(t => t.id === id);
   if (!targetTx) return;
 
-  // Simple warning check (Memory friendly text)
-  const confirmMsg = `Delete this transaction record?\n\nPaid: ${targetTx.name}\nAmount: -${formatCurrency(targetTx.amount)}\nDate: ${targetTx.date}`;
+  const type = targetTx.type || 'sent';
+  const label = type === 'sent' ? 'Sent to' : 'Received from';
+
+  const confirmMsg = `Delete this transaction record?\n\n${label}: ${targetTx.name}\nAmount: ${type === 'sent' ? '-' : '+'}${formatCurrency(targetTx.amount)}\nDate: ${targetTx.date}`;
   if (confirm(confirmMsg)) {
     transactions = transactions.filter(t => t.id !== id);
     saveData();
@@ -312,7 +383,6 @@ settingsForm.addEventListener('submit', (e) => {
 
 // --- EXPORT & IMPORT BACKUP SYSTEM ---
 
-// Export transactions to JSON file
 exportBtn.addEventListener('click', () => {
   const dataStr = JSON.stringify({
     initialSavings: initialSavings,
@@ -325,7 +395,6 @@ exportBtn.addEventListener('click', () => {
   const tempLink = document.createElement('a');
   tempLink.href = url;
   
-  // File name format with current date
   const dateStr = new Date().toISOString().split('T')[0];
   tempLink.download = `memofinance_backup_${dateStr}.json`;
   
@@ -335,7 +404,6 @@ exportBtn.addEventListener('click', () => {
   URL.revokeObjectURL(url);
 });
 
-// Import transactions from JSON file
 importBtnTrigger.addEventListener('click', () => {
   importFileInput.click();
 });
@@ -349,7 +417,6 @@ importFileInput.addEventListener('change', (e) => {
     try {
       const parsedData = JSON.parse(evt.target.result);
       
-      // Simple verification check
       if ('initialSavings' in parsedData && Array.isArray(parsedData.transactions)) {
         initialSavings = parseFloat(parsedData.initialSavings);
         transactions = parsedData.transactions;
@@ -366,7 +433,6 @@ importFileInput.addEventListener('change', (e) => {
   };
   reader.readAsText(file);
   
-  // Reset file input value so same file can be selected again
   importFileInput.value = '';
 });
 
