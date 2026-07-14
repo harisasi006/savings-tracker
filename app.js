@@ -21,6 +21,7 @@ const txForm = document.getElementById('tx-form');
 const inputName = document.getElementById('input-name');
 const inputAmount = document.getElementById('input-amount');
 const inputDate = document.getElementById('input-date');
+const inputCustomCategory = document.getElementById('input-custom-category');
 
 // Labels and buttons to change dynamically
 const labelName = document.getElementById('label-name');
@@ -61,6 +62,21 @@ const categoryColors = {
   'Medical': '#f87171',        // Red
   'Other': '#a1a1aa'           // Zinc
 };
+
+// Returns a stable, distinct color based on the category name
+function getCategoryColor(category) {
+  if (categoryColors[category]) {
+    return categoryColors[category];
+  }
+  // Generate a stable color based on string hashing (for custom categories)
+  let hash = 0;
+  for (let i = 0; i < category.length; i++) {
+    hash = category.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  // Keep hue between 0-360, saturation at 65%, and lightness at 60% for neon aesthetic
+  const h = Math.abs(hash % 360);
+  return `hsl(${h}, 65%, 60%)`;
+}
 
 // Load Data from LocalStorage on Startup
 function loadData() {
@@ -134,6 +150,20 @@ if (toggleSentBtn && toggleReceivedBtn) {
     submitBtn.style.background = "linear-gradient(135deg, var(--color-green), #00b0ff)";
   });
 }
+
+// --- CATEGORY CHANGE LOGIC ---
+const categoryRadios = document.querySelectorAll('input[name="category"]');
+categoryRadios.forEach(radio => {
+  radio.addEventListener('change', (e) => {
+    if (e.target.value === 'Other') {
+      inputCustomCategory.style.display = 'block';
+      inputCustomCategory.focus();
+    } else {
+      inputCustomCategory.style.display = 'none';
+      inputCustomCategory.value = '';
+    }
+  });
+});
 
 // --- CALCULATION & RENDERING ---
 
@@ -236,7 +266,7 @@ function drawCategoryDonutChart() {
     // Draw Arc Slice
     ctx.beginPath();
     ctx.arc(70, 70, 50, startAngle, startAngle + sliceAngle);
-    ctx.strokeStyle = categoryColors[category] || '#a1a1aa';
+    ctx.strokeStyle = getCategoryColor(category);
     ctx.lineWidth = 18;
     ctx.lineCap = 'butt';
     ctx.stroke();
@@ -247,7 +277,7 @@ function drawCategoryDonutChart() {
     const legendItem = document.createElement('div');
     legendItem.className = 'legend-item';
     legendItem.innerHTML = `
-      <span class="legend-dot" style="background-color: ${categoryColors[category]};"></span>
+      <span class="legend-dot" style="background-color: ${getCategoryColor(category)};"></span>
       <span>${category} (${Math.round(percentage * 100)}%)</span>
     `;
     legendContainer.appendChild(legendItem);
@@ -476,7 +506,12 @@ txForm.addEventListener('submit', (e) => {
   const dateValue = inputDate.value;
   
   const checkedRadio = document.querySelector('input[name="category"]:checked');
-  const categoryValue = checkedRadio ? checkedRadio.value : 'Other';
+  let categoryValue = checkedRadio ? checkedRadio.value : 'Other';
+
+  if (categoryValue === 'Other') {
+    const customVal = inputCustomCategory.value.trim();
+    categoryValue = customVal !== '' ? customVal : 'Other';
+  }
 
   if (!nameValue || isNaN(amountValue) || !dateValue) return;
 
@@ -493,8 +528,11 @@ txForm.addEventListener('submit', (e) => {
   saveData();
   calculateAndRender();
 
+  // Reset fields
   inputName.value = '';
   inputAmount.value = '';
+  inputCustomCategory.value = '';
+  inputCustomCategory.style.display = 'none';
   setDefaultDate();
   
   inputName.focus();
